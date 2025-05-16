@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Space Shooter Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Russo+One&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            touch-action: none;
+            background-color: #0f172a;
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .game-title {
+            font-family: 'Russo One', sans-serif;
+            text-shadow: 0 0 20px rgba(96, 165, 250, 0.5);
+        }
+        
+        .game-object {
+            position: absolute;
+            background-repeat: no-repeat;
+            background-size: contain;
+        }
+        
+        .player {
+            width: 80px;
+            height: 80px;
+            filter: drop-shadow(0 0 10px rgba(96, 165, 250, 0.7));
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .player svg {
+            width: 100%;
+            height: 100%;
+            max-width: 90%;
+            max-height: 90%;
+        }
+        
+        .enemy {
+            width: 50px;
+            height: 50px;
+            z-index: 90;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6));
+        }
+        
+        .enemy svg {
+            width: 100%;
+            height: 100%;
+            max-width: 90%;
+            max-height: 90%;
+            transform: rotate(180deg);
+        }
+        
+        .ship-select {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0.7;
+            filter: grayscale(0.5);
+        }
+        
+        .ship-select:hover {
+            opacity: 1;
+            filter: grayscale(0);
+            transform: scale(1.1);
+        }
+        
+        .ship-select.selected {
+            opacity: 1;
+            filter: grayscale(0);
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.8);
+        }
+        
+        .ship-select.locked {
+            cursor: not-allowed;
+            opacity: 0.3;
+            filter: grayscale(1);
+        }
+        
+        .ship-svg {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .ship-svg svg {
+            max-width: 90%;
+            max-height: 90%;
+        }
+        
+        .ship-lock-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+        }
+        
+        .pause-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 30;
+            background: rgba(15, 23, 42, 0.7);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            box-shadow: 0 0 10px rgba(96, 165, 250, 0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .pause-btn:hover {
+            background: rgba(30, 41, 59, 0.9);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(96, 165, 250, 0.4);
+        }
+        
+        .bullet {
+            width: 6px;
+            height: 15px;
+            background-color: #60a5fa;
+            border-radius: 3px;
+            filter: drop-shadow(0 0 5px #60a5fa);
+        }
+        
+        .enemy-bullet {
+            width: 10px;
+            height: 10px;
+            background-color: #f87171;
+            border-radius: 50%;
+            filter: drop-shadow(0 0 5px #f87171);
+        }
+        
+        .explosion {
+            width: 80px;
+            height: 80px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23f59e0b"><circle cx="12" cy="12" r="10"/></svg>');
+            animation: explode 0.5s forwards;
+            z-index: 50;
+        }
+        
+        @keyframes explode {
+            0% { opacity: 1; transform: scale(0.5); }
+            100% { opacity: 0; transform: scale(2); }
+        }
+        
+        .space-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(to bottom, rgba(15, 23, 42, 0.7), rgba(30, 41, 59, 0.7));
+        }
+        
+        .unsplash-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            z-index: -1;
+            filter: brightness(0.5);
+        }
+        
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: starmove linear infinite;
+            z-index: 1;
+        }
+        
+        .star.medium {
+            width: 3px;
+            height: 3px;
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .star.large {
+            width: 4px;
+            height: 4px;
+            background-color: white;
+            box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.4);
+        }
+        
+        @keyframes starmove {
+            from { transform: translateY(-10px); }
+            to { transform: translateY(100vh); }
+        }
+        
+        .notification {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            animation: fadeUpOut 2s forwards;
+            z-index: 50;
+        }
+        
+        @keyframes fadeUpOut {
+            0% { opacity: 0; transform: translateY(0); }
+            10% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-80px); }
+        }
+
+        .glow-text {
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        .stats-box {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(96, 165, 250, 0.2);
+            box-shadow: 0 0 20px rgba(96, 165, 250, 0.1);
+        }
+
+        .btn-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .btn-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(96, 165, 250, 0.4);
+        }
+    </style>
+</head>
+<body class="bg-slate-900">
+    <div id="startScreen" class="w-full h-full fixed inset-0 flex flex-col items-center justify-center text-white z-30 overflow-hidden">
+        <div class="unsplash-bg" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://images.unsplash.com/photo-1698252516231-4f68ca72e174?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'); background-attachment: fixed; background-size: cover;"></div>
+        <div class="space-bg" id="startBg" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;"></div>
+        <div class="absolute inset-0 fixed bg-gradient-to-t from-slate-900 via-transparent to-transparent pointer-events-none"></div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 w-full relative z-10">
+            <!-- Left side: Main menu content -->
+            <div class="flex flex-col items-center justify-center px-4 py-6">
+                <h1 class="game-title text-5xl sm:text-6xl md:text-7xl mb-6 md:mb-12 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-500 font-bold tracking-wider">SPACE SHOOTER</h1>
+                
+                <div class="stats-box p-4 sm:p-6 md:p-8 rounded-2xl mb-8 w-full max-w-md">
+                    <div class="grid grid-cols-2 gap-4 md:gap-8">
+                        <div class="text-center">
+                            <p class="text-sm text-blue-400 mb-1">HIGHEST SCORE</p>
+                            <p id="highScore" class="text-2xl md:text-3xl font-bold glow-text text-yellow-400">0</p>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-sm text-blue-400 mb-1">MAX LEVEL</p>
+                            <p id="maxLevel" class="text-2xl md:text-3xl font-bold glow-text text-green-400">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="startButton" class="btn-hover px-8 sm:px-12 py-4 sm:py-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl text-xl sm:text-2xl mb-8 border border-blue-400/20">
+                    START MISSION
+                </button>
+                
+                <div class="stats-box p-4 sm:p-6 rounded-xl text-center mb-6">
+                    <p class="text-blue-400 font-bold mb-4">CONTROLS</p>
+                    <p class="text-sm text-blue-200 leading-relaxed mb-2">
+                        Arrow Keys / WASD - Move Ship<br>
+                        Mouse Drag - Precise Control<br>
+                        Auto-Fire Enabled
+                    </p>
+                    <p class="text-sm text-blue-200 leading-relaxed">
+                        SPACE / ESC - Pause Game<br>
+                        Pause Button - Open Menu
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Right side: Ship selection -->
+            <div class="flex flex-col items-center justify-center p-4 py-6">
+                <div class="w-full max-w-md">
+                    <h2 class="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-center text-blue-300">SELECT YOUR SHIP</h2>
+                    
+                    <!-- Ship display area -->
+                    <div class="mb-6 sm:mb-8 h-32 sm:h-40 flex items-center justify-center stats-box p-2 rounded-lg">
+                        <div id="selectedShipDisplay" class="w-24 h-24 sm:w-32 sm:h-32 flex items-center justify-center">
+                            <!-- SVG will be inserted here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Ship selection grid -->
+                    <div class="stats-box p-4 rounded-xl">
+                        <h3 class="text-center text-blue-400 mb-4">AVAILABLE SHIPS</h3>
+                        <div class="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
+                            <div class="ship-select selected relative rounded-lg overflow-hidden border-2 border-blue-500 h-16 sm:h-24" data-ship="0" data-level="1">
+                                <div class="ship-svg w-full h-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                                        <defs>
+                                            <linearGradient id="shipGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+                                            </linearGradient>
+                                        </defs>
+                                        <path d="M50 10L40 40H60L50 10Z" fill="url(#shipGrad1)" />
+                                        <rect x="40" y="40" width="20" height="30" fill="url(#shipGrad1)" />
+                                        <polygon points="40,70 30,90 50,80 70,90 60,70" fill="url(#shipGrad1)" />
+                                        <rect x="48" y="25" width="4" height="15" fill="#f1f5f9" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ship-select locked relative rounded-lg overflow-hidden border-2 border-slate-700 h-16 sm:h-24" data-ship="1" data-level="5">
+                                <span class="ship-lock-icon">🔒</span>
+                                <span class="absolute bottom-1 right-2 text-xs text-white bg-slate-800 px-2 py-1 rounded">LVL 5</span>
+                                <div class="ship-svg w-full h-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                                        <defs>
+                                            <linearGradient id="shipGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#818cf8;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#4f46e5;stop-opacity:1" />
+                                            </linearGradient>
+                                        </defs>
+                                        <path d="M50 5L40 35H60L50 5Z" fill="url(#shipGrad2)" />
+                                        <rect x="40" y="35" width="20" height="35" fill="url(#shipGrad2)" />
+                                        <polygon points="40,70 25,85 50,75 75,85 60,70" fill="url(#shipGrad2)" />
+                                        <rect x="47" y="20" width="6" height="20" fill="#f1f5f9" />
+                                        <path d="M40 40H25L30 55H40V40Z" fill="#818cf8" />
+                                        <path d="M60 40H75L70 55H60V40Z" fill="#818cf8" />
+                                        <rect x="48" y="75" width="4" height="10" fill="#f97316" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ship-select locked relative rounded-lg overflow-hidden border-2 border-slate-700 h-16 sm:h-24" data-ship="2" data-level="10">
+                                <span class="ship-lock-icon">🔒</span>
+                                <span class="absolute bottom-1 right-2 text-xs text-white bg-slate-800 px-2 py-1 rounded">LVL 10</span>
+                                <div class="ship-svg w-full h-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                                        <defs>
+                                            <linearGradient id="shipGrad3" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#4338ca;stop-opacity:1" />
+                                            </linearGradient>
+                                            <linearGradient id="weaponGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#d1d5db;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#9ca3af;stop-opacity:1" />
+                                            </linearGradient>
+                                        </defs>
+                                        <path d="M50 5L35 40H65L50 5Z" fill="url(#shipGrad3)" />
+                                        <rect x="35" y="40" width="30" height="30" fill="url(#shipGrad3)" />
+                                        <polygon points="35,70 20,90 50,80 80,90 65,70" fill="url(#shipGrad3)" />
+                                        <rect x="47" y="15" width="6" height="30" fill="#f1f5f9" />
+                                        <path d="M35 35H15L20 60H35V35Z" fill="#818cf8" />
+                                        <path d="M65 35H85L80 60H65V35Z" fill="#818cf8" />
+                                        <rect x="48" y="70" width="4" height="15" fill="#f97316" />
+                                        <rect x="30" y="45" width="5" height="15" fill="url(#weaponGrad)" />
+                                        <rect x="65" y="45" width="5" height="15" fill="url(#weaponGrad)" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ship-select locked relative rounded-lg overflow-hidden border-2 border-slate-700 h-16 sm:h-24" data-ship="3" data-level="15">
+                                <span class="ship-lock-icon">🔒</span>
+                                <span class="absolute bottom-1 right-2 text-xs text-white bg-slate-800 px-2 py-1 rounded">LVL 15</span>
+                                <div class="ship-svg w-full h-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                                        <defs>
+                                            <linearGradient id="shipGrad4" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#6d28d9;stop-opacity:1" />
+                                            </linearGradient>
+                                            <linearGradient id="weaponGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#e5e7eb;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#71717a;stop-opacity:1" />
+                                            </linearGradient>
+                                        </defs>
+                                        <path d="M50 3L30 35H70L50 3Z" fill="url(#shipGrad4)" />
+                                        <rect x="35" y="35" width="30" height="35" fill="url(#shipGrad4)" />
+                                        <polygon points="35,70 15,95 50,85 85,95 65,70" fill="url(#shipGrad4)" />
+                                        <rect x="46" y="10" width="8" height="35" fill="#f1f5f9" />
+                                        <path d="M35 30H10L20 60H35V30Z" fill="#a78bfa" />
+                                        <path d="M65 30H90L80 60H65V30Z" fill="#a78bfa" />
+                                        <rect x="47" y="70" width="6" height="20" fill="#f97316" />
+                                        <rect x="25" y="45" width="8" height="20" fill="url(#weaponGrad2)" />
+                                        <rect x="67" y="45" width="8" height="20" fill="url(#weaponGrad2)" />
+                                        <circle cx="29" cy="40" r="4" fill="#7dd3fc" />
+                                        <circle cx="71" cy="40" r="4" fill="#7dd3fc" />
+                                        <rect x="48" y="25" width="4" height="5" fill="#fcd34d" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ship-select locked relative rounded-lg overflow-hidden border-2 border-slate-700 h-16 sm:h-24" data-ship="4" data-level="20">
+                                <span class="ship-lock-icon">🔒</span>
+                                <span class="absolute bottom-1 right-2 text-xs text-white bg-slate-800 px-2 py-1 rounded">LVL 20</span>
+                                <div class="ship-svg w-full h-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                                        <defs>
+                                            <linearGradient id="shipGrad5" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#c084fc;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#7e22ce;stop-opacity:1" />
+                                            </linearGradient>
+                                            <linearGradient id="weaponGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#f1f5f9;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#475569;stop-opacity:1" />
+                                            </linearGradient>
+                                            <filter id="glow">
+                                                <feGaussianBlur stdDeviation="1.5" result="blur" />
+                                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                            </filter>
+                                        </defs>
+                                        <path d="M50 2L25 30H75L50 2Z" fill="url(#shipGrad5)" />
+                                        <rect x="30" y="30" width="40" height="40" fill="url(#shipGrad5)" />
+                                        <polygon points="30,70 10,95 50,85 90,95 70,70" fill="url(#shipGrad5)" />
+                                        <rect x="45" y="8" width="10" height="40" fill="#f1f5f9" />
+                                        <path d="M30 25H5L15 65H30V25Z" fill="#c084fc" />
+                                        <path d="M70 25H95L85 65H70V25Z" fill="#c084fc" />
+                                        <rect x="46" y="70" width="8" height="25" fill="#f97316" />
+                                        <rect x="20" y="40" width="8" height="25" fill="url(#weaponGrad3)" />
+                                        <rect x="72" y="40" width="8" height="25" fill="url(#weaponGrad3)" />
+                                        <rect x="10" y="45" width="8" height="15" fill="url(#weaponGrad3)" />
+                                        <rect x="82" y="45" width="8" height="15" fill="url(#weaponGrad3)" />
+                                        <circle cx="24" cy="35" r="5" fill="#7dd3fc" />
+                                        <circle cx="76" cy="35" r="5" fill="#7dd3fc" />
+                                        <circle cx="14" cy="40" r="3" fill="#7dd3fc" />
+                                        <circle cx="86" cy="40" r="3" fill="#7dd3fc" />
+                                        <rect x="48" y="20" width="4" height="10" fill="#fcd34d" />
+                                        <circle cx="50" cy="55" r="8" fill="#a855f7" filter="url(#glow)" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="gameScreen" class="hidden fixed inset-0 w-full h-full overflow-hidden">
+        <div class="unsplash-bg" id="gameUnsplashBg"></div>
+        <div class="space-bg" id="gameBg"></div>
+        
+        <!-- Pause button -->
+        <div class="pause-btn" id="pauseBtn">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </div>
+        
+        <div id="pauseScreen" class="hidden absolute inset-0 bg-slate-900 bg-opacity-80 backdrop-blur-sm flex flex-col items-center justify-center z-40">
+            <div class="p-8 bg-slate-800 bg-opacity-90 rounded-xl border border-slate-700 shadow-2xl flex flex-col items-center">
+                <h2 class="text-5xl text-blue-500 font-bold mb-8">PAUSED</h2>
+                <button id="resumeButton" class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold rounded-lg hover:from-indigo-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg mb-4">RESUME GAME</button>
+                <button id="quitButton" class="px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white font-bold rounded-lg hover:from-red-700 hover:to-rose-700 transition-all transform hover:scale-105 shadow-lg">QUIT GAME</button>
+                <p class="text-blue-300 mt-6">Press SPACE or ESC to resume</p>
+            </div>
+        </div>
+        
+        <div id="hud" class="absolute top-4 right-4 p-4 bg-slate-800 bg-opacity-70 rounded-lg z-10 text-white backdrop-blur-sm border border-slate-700 shadow-lg">
+            <div class="flex items-center justify-between">
+                <div class="mr-6">
+                    <p class="text-sm text-slate-400">SCORE</p>
+                    <p id="score" class="text-2xl text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300 font-bold">0</p>
+                </div>
+                <div class="mr-6">
+                    <p class="text-sm text-slate-400">KILLS</p>
+                    <p id="kills" class="text-2xl text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-300 font-bold">0</p>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-400">LEVEL</p>
+                    <p id="level" class="text-2xl text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-300 font-bold">1</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="gameOver" class="hidden absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex flex-col items-center justify-center z-50">
+            <div class="p-8 bg-slate-800 bg-opacity-90 rounded-xl border border-slate-700 shadow-2xl flex flex-col items-center">
+                <h2 class="text-5xl text-red-500 font-bold mb-4">GAME OVER</h2>
+                <p class="text-3xl text-blue-300 mb-6">Your Score: <span id="finalScore" class="font-bold text-white">0</span></p>
+                <div class="flex flex-col md:flex-row gap-4">
+                    <button id="restartButton" class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold rounded-lg hover:from-indigo-700 hover:to-blue-700 transition-all transform hover:scale-105 shadow-lg">PLAY AGAIN</button>
+                    <button id="homeButton" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-lg">GO TO HOME</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Game variables
+        let game = {
+            started: false,
+            over: false,
+            paused: false,
+            score: 0,
+            level: 1,
+            kills: 0,
+            lastEnemySpawn: 0,
+            enemySpawnRate: 2000, // milliseconds
+            enemySpeed: 2,
+            enemyShootRate: 1200, // Increased initial enemy shooting speed (was 2000)
+            lastLevelUp: 0,
+            levelUpInterval: 20000, // 20 seconds
+            mouseControl: false,
+            lastScoreUpdate: 0,
+            scoreUpdateInterval: 100, // 100 milliseconds
+            backgroundImages: [
+                'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2022&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?q=80&w=2071&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?q=80&w=2113&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1539321908154-04927596764d?q=80&w=2070&auto=format&fit=crop',
+                'https://images.unsplash.com/photo-1465101162946-4377e57745c3?q=80&w=2078&auto=format&fit=crop'
+            ],
+            ships: [
+                {
+                    svgId: "ship1",
+                    unlockLevel: 1,
+                    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                        <defs>
+                            <linearGradient id="shipGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#3b82f6;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M50 10L40 40H60L50 10Z" fill="url(#shipGrad1)" />
+                        <rect x="40" y="40" width="20" height="30" fill="url(#shipGrad1)" />
+                        <polygon points="40,70 30,90 50,80 70,90 60,70" fill="url(#shipGrad1)" />
+                        <rect x="48" y="25" width="4" height="15" fill="#f1f5f9" />
+                    </svg>`
+                },
+                {
+                    svgId: "ship2",
+                    unlockLevel: 5,
+                    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                        <defs>
+                            <linearGradient id="shipGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#818cf8;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#4f46e5;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M50 5L40 35H60L50 5Z" fill="url(#shipGrad2)" />
+                        <rect x="40" y="35" width="20" height="35" fill="url(#shipGrad2)" />
+                        <polygon points="40,70 25,85 50,75 75,85 60,70" fill="url(#shipGrad2)" />
+                        <rect x="47" y="20" width="6" height="20" fill="#f1f5f9" />
+                        <path d="M40 40H25L30 55H40V40Z" fill="#818cf8" />
+                        <path d="M60 40H75L70 55H60V40Z" fill="#818cf8" />
+                        <rect x="48" y="75" width="4" height="10" fill="#f97316" />
+                    </svg>`
+                },
+                {
+                    svgId: "ship3",
+                    unlockLevel: 10,
+                    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                        <defs>
+                            <linearGradient id="shipGrad3" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#4338ca;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="weaponGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#d1d5db;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#9ca3af;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M50 5L35 40H65L50 5Z" fill="url(#shipGrad3)" />
+                        <rect x="35" y="40" width="30" height="30" fill="url(#shipGrad3)" />
+                        <polygon points="35,70 20,90 50,80 80,90 65,70" fill="url(#shipGrad3)" />
+                        <rect x="47" y="15" width="6" height="30" fill="#f1f5f9" />
+                        <path d="M35 35H15L20 60H35V35Z" fill="#818cf8" />
+                        <path d="M65 35H85L80 60H65V35Z" fill="#818cf8" />
+                        <rect x="48" y="70" width="4" height="15" fill="#f97316" />
+                        <rect x="30" y="45" width="5" height="15" fill="url(#weaponGrad)" />
+                        <rect x="65" y="45" width="5" height="15" fill="url(#weaponGrad)" />
+                    </svg>`
+                },
+                {
+                    svgId: "ship4",
+                    unlockLevel: 15,
+                    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                        <defs>
+                            <linearGradient id="shipGrad4" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#6d28d9;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="weaponGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#e5e7eb;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#71717a;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M50 3L30 35H70L50 3Z" fill="url(#shipGrad4)" />
+                        <rect x="35" y="35" width="30" height="35" fill="url(#shipGrad4)" />
+                        <polygon points="35,70 15,95 50,85 85,95 65,70" fill="url(#shipGrad4)" />
+                        <rect x="46" y="10" width="8" height="35" fill="#f1f5f9" />
+                        <path d="M35 30H10L20 60H35V30Z" fill="#a78bfa" />
+                        <path d="M65 30H90L80 60H65V30Z" fill="#a78bfa" />
+                        <rect x="47" y="70" width="6" height="20" fill="#f97316" />
+                        <rect x="25" y="45" width="8" height="20" fill="url(#weaponGrad2)" />
+                        <rect x="67" y="45" width="8" height="20" fill="url(#weaponGrad2)" />
+                        <circle cx="29" cy="40" r="4" fill="#7dd3fc" />
+                        <circle cx="71" cy="40" r="4" fill="#7dd3fc" />
+                        <rect x="48" y="25" width="4" height="5" fill="#fcd34d" />
+                    </svg>`
+                },
+                {
+                    svgId: "ship5",
+                    unlockLevel: 20,
+                    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                        <defs>
+                            <linearGradient id="shipGrad5" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#c084fc;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#7e22ce;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="weaponGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#f1f5f9;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#475569;stop-opacity:1" />
+                            </linearGradient>
+                            <filter id="glow">
+                                <feGaussianBlur stdDeviation="1.5" result="blur" />
+                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                            </filter>
+                        </defs>
+                        <path d="M50 2L25 30H75L50 2Z" fill="url(#shipGrad5)" />
+                        <rect x="30" y="30" width="40" height="40" fill="url(#shipGrad5)" />
+                        <polygon points="30,70 10,95 50,85 90,95 70,70" fill="url(#shipGrad5)" />
+                        <rect x="45" y="8" width="10" height="40" fill="#f1f5f9" />
+                        <path d="M30 25H5L15 65H30V25Z" fill="#c084fc" />
+                        <path d="M70 25H95L85 65H70V25Z" fill="#c084fc" />
+                        <rect x="46" y="70" width="8" height="25" fill="#f97316" />
+                        <rect x="20" y="40" width="8" height="25" fill="url(#weaponGrad3)" />
+                        <rect x="72" y="40" width="8" height="25" fill="url(#weaponGrad3)" />
+                        <rect x="10" y="45" width="8" height="15" fill="url(#weaponGrad3)" />
+                        <rect x="82" y="45" width="8" height="15" fill="url(#weaponGrad3)" />
+                        <circle cx="24" cy="35" r="5" fill="#7dd3fc" />
+                        <circle cx="76" cy="35" r="5" fill="#7dd3fc" />
+                        <circle cx="14" cy="40" r="3" fill="#7dd3fc" />
+                        <circle cx="86" cy="40" r="3" fill="#7dd3fc" />
+                        <rect x="48" y="20" width="4" height="10" fill="#fcd34d" />
+                        <circle cx="50" cy="55" r="8" fill="#a855f7" filter="url(#glow)" />
+                    </svg>`
+                }
+            ],
+            enemyTypes: [
+                // Level 1-4: Basic enemy
+                {
+                    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                        <defs>
+                            <linearGradient id="enemyGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#b91c1c;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M50 10L35 40H65L50 10Z" fill="url(#enemyGrad1)" />
+                        <rect x="35" y="40" width="30" height="30" fill="url(#enemyGrad1)" />
+                        <polygon points="35,70 25,85 50,77 75,85 65,70" fill="url(#enemyGrad1)" />
+                        <rect x="48" y="25" width="4" height="15" fill="#f87171" />
+                    </svg>`
+                },
+                // Level 5-9: More developed enemy
+                {
+                    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                        <defs>
+                            <linearGradient id="enemyGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#dc2626;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#991b1b;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M50 5L30 40H70L50 5Z" fill="url(#enemyGrad2)" />
+                        <rect x="30" y="40" width="40" height="30" fill="url(#enemyGrad2)" />
+                        <polygon points="30,70 15,90 50,80 85,90 70,70" fill="url(#enemyGrad2)" />
+                        <rect x="47" y="15" width="6" height="25" fill="#f87171" />
+                        <path d="M30 45H15L20 65H30V45Z" fill="#fca5a5" />
+                        <path d="M70 45H85L80 65H70V45Z" fill="#fca5a5" />
+                    </svg>`
+                },
+                // Level 10-14: Advanced enemy
+                {
+                    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                        <defs>
+                            <linearGradient id="enemyGrad3" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#b91c1c;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#7f1d1d;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="weaponGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#fecaca;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#ef4444;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M50 3L25 40H75L50 3Z" fill="url(#enemyGrad3)" />
+                        <rect x="30" y="40" width="40" height="35" fill="url(#enemyGrad3)" />
+                        <polygon points="30,75 10,95 50,85 90,95 70,75" fill="url(#enemyGrad3)" />
+                        <rect x="45" y="10" width="10" height="30" fill="#f87171" />
+                        <path d="M30 35H5L15 65H30V35Z" fill="#fca5a5" />
+                        <path d="M70 35H95L85 65H70V35Z" fill="#fca5a5" />
+                        <rect x="25" y="50" width="8" height="15" fill="url(#weaponGrad)" />
+                        <rect x="67" y="50" width="8" height="15" fill="url(#weaponGrad)" />
+                        <circle cx="50" cy="55" r="5" fill="#fef08a" />
+                    </svg>`
+                },
+                // Level 15-19: Elite enemy
+                {
+                    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                        <defs>
+                            <linearGradient id="enemyGrad4" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#991b1b;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#450a0a;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="weaponGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#fef08a;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+                            </linearGradient>
+                            <filter id="enemyGlow">
+                                <feGaussianBlur stdDeviation="1" result="blur" />
+                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                            </filter>
+                        </defs>
+                        <path d="M50 2L20 40H80L50 2Z" fill="url(#enemyGrad4)" />
+                        <rect x="25" y="40" width="50" height="35" fill="url(#enemyGrad4)" />
+                        <polygon points="25,75 5,98 50,88 95,98 75,75" fill="url(#enemyGrad4)" />
+                        <rect x="45" y="8" width="10" height="32" fill="#f87171" />
+                        <path d="M25 30H0L10 65H25V30Z" fill="#dc2626" />
+                        <path d="M75 30H100L90 65H75V30Z" fill="#dc2626" />
+                        <rect x="20" y="45" width="10" height="20" fill="url(#weaponGrad2)" />
+                        <rect x="70" y="45" width="10" height="20" fill="url(#weaponGrad2)" />
+                        <rect x="5" y="50" width="10" height="10" fill="url(#weaponGrad2)" />
+                        <rect x="85" y="50" width="10" height="10" fill="url(#weaponGrad2)" />
+                        <circle cx="50" cy="55" r="8" fill="#f97316" filter="url(#enemyGlow)" />
+                    </svg>`
+                },
+                // Level 20+: Boss-level enemy
+                {
+                    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+                        <defs>
+                            <linearGradient id="enemyGrad5" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#7f1d1d;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#0c0a09;stop-opacity:1" />
+                            </linearGradient>
+                            <linearGradient id="weaponGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#fef08a;stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:#ea580c;stop-opacity:1" />
+                            </linearGradient>
+                            <filter id="enemyGlowStrong">
+                                <feGaussianBlur stdDeviation="2" result="blur" />
+                                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                            </filter>
+                        </defs>
+                        <path d="M50 0L15 40H85L50 0Z" fill="url(#enemyGrad5)" />
+                        <rect x="20" y="40" width="60" height="40" fill="url(#enemyGrad5)" />
+                        <polygon points="20,80 0,100 50,90 100,100 80,80" fill="url(#enemyGrad5)" />
+                        <rect x="42" y="5" width="16" height="35" fill="#b91c1c" />
+                        <path d="M20 25H-10L0 70H20V25Z" fill="#7f1d1d" />
+                        <path d="M80 25H110L100 70H80V25Z" fill="#7f1d1d" />
+                        <rect x="15" y="42" width="12" height="25" fill="url(#weaponGrad3)" />
+                        <rect x="73" y="42" width="12" height="25" fill="url(#weaponGrad3)" />
+                        <rect x="0" y="48" width="12" height="15" fill="url(#weaponGrad3)" />
+                        <rect x="88" y="48" width="12" height="15" fill="url(#weaponGrad3)" />
+                        <circle cx="35" cy="55" r="6" fill="#f97316" filter="url(#enemyGlowStrong)" />
+                        <circle cx="65" cy="55" r="6" fill="#f97316" filter="url(#enemyGlowStrong)" />
+                        <circle cx="50" cy="65" r="10" fill="#ef4444" filter="url(#enemyGlowStrong)" />
+                    </svg>`
+                }
+            ],
+            selectedShip: 0
+        };
+        
+        let player = {
+            element: null,
+            width: 80,
+            height: 80,
+            x: 0,
+            y: 0,
+            speed: 7,
+            lastShot: 0,
+            shootDelay: 150, // Increased shooting speed (was 300)
+            autoshoot: true
+        };
+        
+        let bullets = [];
+        let enemyBullets = [];
+        let enemies = [];
+        let stars = [];
+        let notifications = [];
+        let screenWidth = window.innerWidth;
+        let screenHeight = window.innerHeight;
+        let gameLoop;
+        let starInterval;
+        let keys = {};
+        let mousePosition = { x: 0, y: 0 };
+        let isDragging = false;
+        
+        // High score management functions
+        function getHighScore() {
+            return parseInt(localStorage.getItem('spaceShooterHighScore')) || 0;
+        }
+        
+        function getMaxLevel() {
+            return parseInt(localStorage.getItem('spaceShooterMaxLevel')) || 0;
+        }
+        
+        function getUnlockedShips() {
+            const saved = localStorage.getItem('spaceShooterUnlockedShips');
+            return saved ? JSON.parse(saved) : [0]; // Default to only first ship
+        }
+        
+        function getSelectedShip() {
+            return parseInt(localStorage.getItem('spaceShooterSelectedShip')) || 0;
+        }
+        
+        function updateHighScore(score) {
+            const currentHighScore = getHighScore();
+            if (score > currentHighScore) {
+                localStorage.setItem('spaceShooterHighScore', score);
+                document.getElementById('highScore').textContent = score;
+                return true;
+            }
+            return false;
+        }
+        
+        function updateMaxLevel(level) {
+            const currentMaxLevel = getMaxLevel();
+            if (level > currentMaxLevel) {
+                localStorage.setItem('spaceShooterMaxLevel', level);
+                document.getElementById('maxLevel').textContent = level;
+                
+                // Unlock ships based on level
+                unlockShipsBasedOnLevel(level);
+                
+                return true;
+            }
+            return false;
+        }
+        
+        function unlockShipsBasedOnLevel(maxLevel) {
+            const unlockedShips = getUnlockedShips();
+            let updated = false;
+            
+            game.ships.forEach((ship, index) => {
+                if (maxLevel >= ship.unlockLevel && !unlockedShips.includes(index)) {
+                    unlockedShips.push(index);
+                    updated = true;
+                    createNotification(`NEW SHIP UNLOCKED!`, screenWidth / 2 - 100, screenHeight / 2 - 160);
+                }
+            });
+            
+            if (updated) {
+                localStorage.setItem('spaceShooterUnlockedShips', JSON.stringify(unlockedShips));
+                updateShipSelectionUI();
+            }
+        }
+        
+        function updateSelectedShip(shipIndex) {
+            game.selectedShip = shipIndex;
+            localStorage.setItem('spaceShooterSelectedShip', shipIndex);
+        }
+        
+        // Initialize high score display
+        document.getElementById('highScore').textContent = getHighScore();
+        document.getElementById('maxLevel').textContent = getMaxLevel();
+        
+        // DOM references
+        const startScreen = document.getElementById('startScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const pauseScreen = document.getElementById('pauseScreen');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const homeButton = document.getElementById('homeButton');
+        const resumeButton = document.getElementById('resumeButton');
+        const quitButton = document.getElementById('quitButton');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const scoreElement = document.getElementById('score');
+        const killsElement = document.getElementById('kills');
+        const levelElement = document.getElementById('level');
+        const gameOverScreen = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+        const startBg = document.getElementById('startBg');
+        const gameBg = document.getElementById('gameBg');
+        const gameUnsplashBg = document.getElementById('gameUnsplashBg');
+        const selectedShipDisplay = document.getElementById('selectedShipDisplay');
+        const shipSelectors = document.querySelectorAll('.ship-select');
+        
+        // Initialize ship selection
+        function initializeShipSelection() {
+            // Load selected ship from storage
+            game.selectedShip = getSelectedShip();
+            
+            // Check for unlocks based on max level
+            unlockShipsBasedOnLevel(getMaxLevel());
+            
+            // Update the UI
+            updateShipSelectionUI();
+            
+            // Add event listeners to ship selectors
+            shipSelectors.forEach(shipElement => {
+                shipElement.addEventListener('click', function() {
+                    const shipIndex = parseInt(this.dataset.ship);
+                    const unlockedShips = getUnlockedShips();
+                    
+                    // Check if ship is unlocked
+                    if (unlockedShips.includes(shipIndex)) {
+                        // Update selected ship
+                        updateSelectedShip(shipIndex);
+                        
+                        // Update UI
+                        updateShipSelectionUI();
+                    }
+                });
+            });
+        }
+        
+        // Consistent function to render a ship SVG
+        function renderShipSVG(container, shipIndex) {
+            // Clear container
+            container.innerHTML = '';
+            
+            // Get ship data
+            const shipData = game.ships[shipIndex];
+            
+            // Create a container div to ensure consistent rendering
+            const svgContainer = document.createElement('div');
+            svgContainer.style.display = 'flex';
+            svgContainer.style.alignItems = 'center';
+            svgContainer.style.justifyContent = 'center';
+            svgContainer.style.width = '100%';
+            svgContainer.style.height = '100%';
+            
+            // Create consistent SVG with unique IDs to prevent conflicts
+            const uniqueId = `ship-${shipIndex}-${Date.now()}`;
+            let svgString = shipData.svg
+                .replace(/id="shipGrad\d+"/g, `id="${uniqueId}-grad"`)
+                .replace(/url\(#shipGrad\d+\)/g, `url(#${uniqueId}-grad)`)
+                .replace(/id="weaponGrad\d*"/g, `id="${uniqueId}-weaponGrad"`)
+                .replace(/url\(#weaponGrad\d*\)/g, `url(#${uniqueId}-weaponGrad)`)
+                .replace(/id="glow"/g, `id="${uniqueId}-glow"`)
+                .replace(/url\(#glow\)/g, `url(#${uniqueId}-glow)`);
+            
+            svgContainer.innerHTML = svgString;
+            container.appendChild(svgContainer);
+            
+            // Ensure SVG takes full container space
+            const svg = svgContainer.querySelector('svg');
+            if (svg) {
+                svg.style.width = '100%';
+                svg.style.height = '100%';
+                svg.style.display = 'block';
+            }
+            
+            return svgContainer;
+        }
+
+        function updateShipSelectionUI() {
+            const unlockedShips = getUnlockedShips();
+            
+            // Update selected ship display using the consistent render function
+            renderShipSVG(selectedShipDisplay, game.selectedShip);
+            
+            // Update ship selection grid
+            shipSelectors.forEach(shipElement => {
+                const shipIndex = parseInt(shipElement.dataset.ship);
+                
+                // Reset classes
+                shipElement.classList.remove('selected', 'locked');
+                
+                // Is this ship selected?
+                if (shipIndex === game.selectedShip) {
+                    shipElement.classList.add('selected');
+                    shipElement.classList.remove('locked');
+                    shipElement.querySelector('.ship-lock-icon')?.remove();
+                }
+                
+                // Is this ship locked?
+                if (!unlockedShips.includes(shipIndex)) {
+                    shipElement.classList.add('locked');
+                    if (!shipElement.querySelector('.ship-lock-icon')) {
+                        const lockIcon = document.createElement('span');
+                        lockIcon.className = 'ship-lock-icon';
+                        lockIcon.textContent = '🔒';
+                        shipElement.appendChild(lockIcon);
+                    }
+                } else {
+                    // Ship is unlocked
+                    shipElement.classList.remove('locked');
+                    shipElement.querySelector('.ship-lock-icon')?.remove();
+                }
+            });
+        }
+
+        function createPlayer() {
+            player.element = document.createElement('div');
+            player.element.classList.add('game-object', 'player');
+            
+            // Use the consistent render function
+            renderShipSVG(player.element, game.selectedShip);
+            
+            gameScreen.appendChild(player.element);
+            
+            // Update player dimensions
+            player.width = 80;
+            player.height = 80;
+            
+            // Set initial position to center bottom
+            player.x = (screenWidth - player.width) / 2;
+            player.y = screenHeight - player.height - 40;
+            
+            updatePlayerPosition();
+        }
+        
+        // Call initialize function on window load
+        window.addEventListener('load', function() {
+            initializeShipSelection();
+            
+            // Prevent scrolling on mobile
+            document.addEventListener('touchmove', function(e) {
+                if (game.started && !game.over) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        });
+        
+        // Set random background from Unsplash
+        function setRandomBackground() {
+            const randomIndex = Math.floor(Math.random() * game.backgroundImages.length);
+            const imageUrl = game.backgroundImages[randomIndex];
+            gameUnsplashBg.style.backgroundImage = `url('${imageUrl}')`;
+        }
+        
+        // Initialize background stars for start screen
+        createStarBackground(startBg, 100);
+        
+        // Event listeners
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', restartGame);
+        homeButton.addEventListener('click', quitGame);
+        resumeButton.addEventListener('click', resumeGame);
+        quitButton.addEventListener('click', quitGame);
+        pauseBtn.addEventListener('click', pauseGame);
+        
+        window.addEventListener('keydown', e => {
+            keys[e.key] = true;
+            
+            // Space key or ESC for pause/resume
+            if ((e.code === 'Space' || e.code === 'Escape') && game.started && !game.over) {
+                if (game.paused) {
+                    resumeGame();
+                } else {
+                    pauseGame();
+                }
+            }
+        });
+        
+        window.addEventListener('keyup', e => {
+            keys[e.key] = false;
+        });
+        
+        window.addEventListener('mousemove', e => {
+            mousePosition.x = e.clientX;
+            mousePosition.y = e.clientY;
+            
+            if (game.started && !game.over && player.element && isDragging) {
+                updatePlayerPositionWithMouse();
+            }
+        });
+        
+        window.addEventListener('mousedown', e => {
+            if (game.started && !game.over && isMouseOverPlayer(e.clientX, e.clientY)) {
+                isDragging = true;
+                game.mouseControl = true;
+            }
+        });
+        
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+        
+        window.addEventListener('touchstart', e => {
+            const touch = e.touches[0];
+            mousePosition.x = touch.clientX;
+            mousePosition.y = touch.clientY;
+            
+            if (game.started && !game.over && isMouseOverPlayer(touch.clientX, touch.clientY)) {
+                isDragging = true;
+                game.mouseControl = true;
+            }
+        });
+        
+        window.addEventListener('touchmove', e => {
+            if (isDragging && game.started && !game.over) {
+                e.preventDefault(); // Prevent scrolling when dragging
+                const touch = e.touches[0];
+                mousePosition.x = touch.clientX;
+                mousePosition.y = touch.clientY;
+                
+                if (player.element) {
+                    updatePlayerPositionWithMouse();
+                }
+            }
+        }, { passive: false });
+        
+        window.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+        
+        window.addEventListener('resize', () => {
+            screenWidth = window.innerWidth;
+            screenHeight = window.innerHeight;
+            
+            if (player.element) {
+                player.x = Math.min(player.x, screenWidth - player.width);
+                player.y = Math.min(player.y, screenHeight - player.height);
+                updatePlayerPosition();
+            }
+        });
+        
+        // Check if mouse is over player ship
+        function isMouseOverPlayer(mouseX, mouseY) {
+            return (mouseX >= player.x && 
+                   mouseX <= player.x + player.width &&
+                   mouseY >= player.y && 
+                   mouseY <= player.y + player.height);
+        }
+        
+        // Update player position based on mouse
+        function updatePlayerPositionWithMouse() {
+            const newX = mousePosition.x - player.width / 2;
+            const newY = mousePosition.y - player.height / 2;
+            
+            // Keep player within bounds
+            player.x = Math.max(0, Math.min(newX, screenWidth - player.width));
+            player.y = Math.max(0, Math.min(newY, screenHeight - player.height));
+            
+            updatePlayerPosition();
+        }
+        
+        // Create star background
+        function createStarBackground(container, numStars) {
+            for (let i = 0; i < numStars; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                
+                // Randomly set star size
+                const random = Math.random();
+                if (random > 0.9) {
+                    star.classList.add('large');
+                } else if (random > 0.7) {
+                    star.classList.add('medium');
+                }
+                
+                // Set random position
+                const x = Math.random() * 100;
+                const y = Math.random() * 100;
+                star.style.left = `${x}%`;
+                star.style.top = `${y}%`;
+                
+                // Set random animation duration
+                const duration = 3 + Math.random() * 10;
+                star.style.animationDuration = `${duration}s`;
+                
+                // Set random delay
+                const delay = Math.random() * duration;
+                star.style.animationDelay = `-${delay}s`;
+                
+                container.appendChild(star);
+                stars.push(star);
+            }
+        }
+        
+        // Create level up notification
+        function createNotification(text, x, y) {
+            const notification = document.createElement('div');
+            notification.classList.add('notification');
+            notification.textContent = text;
+            notification.style.left = `${x}px`;
+            notification.style.top = `${y}px`;
+            gameScreen.appendChild(notification);
+            
+            // Remove after animation completes
+            setTimeout(() => {
+                notification.remove();
+            }, 2000);
+        }
+        
+        // Game functions
+        function startGame() {
+            startScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            gameOverScreen.classList.add('hidden');
+            pauseScreen.classList.add('hidden');
+            
+            // Set random background from Unsplash
+            setRandomBackground();
+            
+            // Create background for game screen
+            createStarBackground(gameBg, 150);
+            
+            // Reset game state
+            game.started = true;
+            game.over = false;
+            game.paused = false;
+            game.score = 0;
+            game.level = 1;
+            game.kills = 0;
+            game.lastEnemySpawn = 0;
+            game.enemySpawnRate = 2000;
+            game.enemySpeed = 2;
+            game.enemyShootRate = 1200;
+            game.lastLevelUp = Date.now();
+            game.lastScoreUpdate = Date.now();
+            game.mouseControl = false;
+            
+            scoreElement.textContent = game.score;
+            killsElement.textContent = game.kills;
+            levelElement.textContent = game.level;
+            
+            // Clear any existing game objects
+            bullets = [];
+            enemyBullets = [];
+            enemies = [];
+            document.querySelectorAll('.game-object').forEach(el => el.remove());
+            
+            // Create player
+            createPlayer();
+            
+            // Start game loops
+            gameLoop = requestAnimationFrame(update);
+        }
+        
+        function restartGame() {
+            gameBg.innerHTML = ''; // Clear stars
+            gameOverScreen.classList.add('hidden');
+            
+            // Change background on restart
+            setRandomBackground();
+            
+            startGame();
+        }
+        
+        function updatePlayerPosition() {
+            player.element.style.left = `${player.x}px`;
+            player.element.style.top = `${player.y}px`;
+        }
+        
+        function movePlayer() {
+            // Skip keyboard movement if using mouse control
+            if (game.mouseControl && isDragging) return;
+            
+            let dx = 0;
+            let dy = 0;
+            
+            if (keys['ArrowLeft'] || keys['a']) dx -= player.speed;
+            if (keys['ArrowRight'] || keys['d']) dx += player.speed;
+            if (keys['ArrowUp'] || keys['w']) dy -= player.speed;
+            if (keys['ArrowDown'] || keys['s']) dy += player.speed;
+            
+            // Update player position
+            player.x = Math.max(0, Math.min(player.x + dx, screenWidth - player.width));
+            player.y = Math.max(0, Math.min(player.y + dy, screenHeight - player.height));
+            
+            updatePlayerPosition();
+        }
+        
+        function shoot() {
+            const now = Date.now();
+            if (now - player.lastShot < player.shootDelay) return;
+            
+            player.lastShot = now;
+            
+            const bullet = document.createElement('div');
+            bullet.classList.add('game-object', 'bullet');
+            
+            const bulletX = player.x + player.width / 2 - 3; // Center bullet
+            const bulletY = player.y - 15;
+            
+            bullet.style.left = `${bulletX}px`;
+            bullet.style.top = `${bulletY}px`;
+            
+            gameScreen.appendChild(bullet);
+            
+            bullets.push({
+                element: bullet,
+                x: bulletX,
+                y: bulletY,
+                speed: 12
+            });
+        }
+        
+        function spawnEnemy() {
+            const now = Date.now();
+            if (now - game.lastEnemySpawn < game.enemySpawnRate) return;
+            
+            game.lastEnemySpawn = now;
+            
+            const enemy = document.createElement('div');
+            enemy.classList.add('game-object', 'enemy');
+            
+            // Use the new render function instead of background-image
+            renderEnemySVG(enemy, game.level);
+            
+            const enemyX = Math.random() * (screenWidth - 50);
+            const enemyY = -60;
+            
+            enemy.style.left = `${enemyX}px`;
+            enemy.style.top = `${enemyY}px`;
+            
+            gameScreen.appendChild(enemy);
+            
+            enemies.push({
+                element: enemy,
+                x: enemyX,
+                y: enemyY,
+                speed: game.enemySpeed,
+                lastShot: now - Math.random() * game.enemyShootRate // Randomize first shot
+            });
+        }
+        
+        function enemyShoot(enemy) {
+            const now = Date.now();
+            if (now - enemy.lastShot < game.enemyShootRate) return;
+            
+            enemy.lastShot = now;
+            
+            const bullet = document.createElement('div');
+            bullet.classList.add('game-object', 'enemy-bullet');
+            
+            const bulletX = enemy.x + 25 - 5; // Center bullet (adjusted for new width)
+            const bulletY = enemy.y + 50;
+            
+            // Calculate direction towards player
+            const dx = (player.x + player.width / 2) - (enemy.x + 25);
+            const dy = (player.y + player.height / 2) - (enemy.y + 25);
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const directionX = dx / distance;
+            const directionY = dy / distance;
+            
+            bullet.style.left = `${bulletX}px`;
+            bullet.style.top = `${bulletY}px`;
+            
+            gameScreen.appendChild(bullet);
+            
+            enemyBullets.push({
+                element: bullet,
+                x: bulletX,
+                y: bulletY,
+                speed: 6,
+                directionX: directionX,
+                directionY: directionY
+            });
+        }
+        
+        function updateBullets() {
+            // Update player bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+                bullet.y -= bullet.speed;
+                bullet.element.style.top = `${bullet.y}px`;
+                
+                // Remove bullet if off-screen
+                if (bullet.y < -20) {
+                    bullet.element.remove();
+                    bullets.splice(i, 1);
+                }
+            }
+            
+            // Update enemy bullets
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                const bullet = enemyBullets[i];
+                bullet.x += bullet.directionX * bullet.speed;
+                bullet.y += bullet.directionY * bullet.speed;
+                bullet.element.style.left = `${bullet.x}px`;
+                bullet.element.style.top = `${bullet.y}px`;
+                
+                // Remove bullet if off-screen
+                if (bullet.y > screenHeight || bullet.y < 0 || bullet.x < 0 || bullet.x > screenWidth) {
+                    bullet.element.remove();
+                    enemyBullets.splice(i, 1);
+                    continue;
+                }
+                
+                // Check collision with player
+                if (game.started && !game.over &&
+                    bullet.x < player.x + player.width &&
+                    bullet.x + 6 > player.x &&
+                    bullet.y < player.y + player.height &&
+                    bullet.y + 15 > player.y) {
+                    gameOver();
+                    createExplosion(player.x, player.y);
+                }
+            }
+        }
+        
+        function updateEnemies() {
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                enemy.y += enemy.speed;
+                enemy.element.style.top = `${enemy.y}px`;
+                
+                // Check if enemy is off-screen
+                if (enemy.y > screenHeight) {
+                    enemy.element.remove();
+                    enemies.splice(i, 1);
+                    continue;
+                }
+                
+                // Enemy shooting
+                enemyShoot(enemy);
+                
+                // Check collision with player bullets
+                for (let j = bullets.length - 1; j >= 0; j--) {
+                    const bullet = bullets[j];
+                    if (bullet.x < enemy.x + 50 &&
+                        bullet.x + 6 > enemy.x &&
+                        bullet.y < enemy.y + 50 &&
+                        bullet.y + 15 > enemy.y) {
+                        
+                        // Hit enemy - remove bullet and enemy
+                        bullet.element.remove();
+                        bullets.splice(j, 1);
+                        
+                        enemy.element.remove();
+                        enemies.splice(i, 1);
+                        
+                        // Add score and increment kills
+                        game.score += 25;
+                        game.kills++;
+                        scoreElement.textContent = game.score;
+                        killsElement.textContent = game.kills;
+                        
+                        // Create explosion
+                        createExplosion(enemy.x, enemy.y);
+                        
+                        break;
+                    }
+                }
+                
+                // Check collision with player
+                if (game.started && !game.over &&
+                    enemy.x < player.x + player.width &&
+                    enemy.x + 50 > player.x &&
+                    enemy.y < player.y + player.height &&
+                    enemy.y + 50 > player.y) {
+                    gameOver();
+                    createExplosion(player.x, player.y);
+                }
+            }
+        }
+        
+        function createExplosion(x, y) {
+            const explosion = document.createElement('div');
+            explosion.classList.add('game-object', 'explosion');
+            explosion.style.left = `${x}px`;
+            explosion.style.top = `${y}px`;
+            gameScreen.appendChild(explosion);
+            
+            // Remove after animation completes
+            setTimeout(() => {
+                explosion.remove();
+            }, 500);
+        }
+        
+        function updateScore() {
+            const now = Date.now();
+            if (now - game.lastScoreUpdate >= game.scoreUpdateInterval) {
+                game.lastScoreUpdate = now;
+                game.score++;
+                scoreElement.textContent = game.score;
+            }
+        }
+        
+        function checkLevelUp() {
+            const now = Date.now();
+            if (now - game.lastLevelUp >= game.levelUpInterval) {
+                game.lastLevelUp = now;
+                game.level++;
+                levelElement.textContent = game.level;
+                
+                // Increase difficulty
+                game.enemySpawnRate = Math.max(500, game.enemySpawnRate - 300);
+                game.enemySpeed += 0.8;
+                game.enemyShootRate = Math.max(500, game.enemyShootRate - 300);
+                
+                // Create level up notification
+                createNotification(`LEVEL ${game.level}!`, screenWidth / 2 - 60, screenHeight / 2 - 30);
+                
+                // Change background on level up
+                if (game.level % 2 === 0) {
+                    setRandomBackground();
+                }
+                
+                // Check if new level unlocks ships
+                unlockShipsBasedOnLevel(game.level);
+                
+                // If we've reached a new enemy type threshold, show notification
+                if (game.level === 5 || game.level === 10 || game.level === 15 || game.level === 20) {
+                    createNotification(`STRONGER ENEMIES AHEAD!`, screenWidth / 2 - 100, screenHeight / 2 - 70);
+                }
+            }
+        }
+        
+        function gameOver() {
+            game.over = true;
+            
+            // Check for high score and max level
+            const newHighScore = updateHighScore(game.score);
+            const newMaxLevel = updateMaxLevel(game.level);
+            
+            gameOverScreen.classList.remove('hidden');
+            finalScoreElement.textContent = game.score;
+            
+            // Show notification if new high score achieved
+            if (newHighScore) {
+                createNotification('NEW HIGH SCORE!', screenWidth / 2 - 80, screenHeight / 2 - 80);
+            }
+            if (newMaxLevel) {
+                createNotification('NEW MAX LEVEL!', screenWidth / 2 - 80, screenHeight / 2 - 120);
+            }
+        }
+        
+        function pauseGame() {
+            if (!game.started || game.over) return;
+            
+            game.paused = true;
+            pauseScreen.classList.remove('hidden');
+            cancelAnimationFrame(gameLoop);
+        }
+        
+        function resumeGame() {
+            if (!game.started || game.over) return;
+            
+            game.paused = false;
+            pauseScreen.classList.add('hidden');
+            gameLoop = requestAnimationFrame(update);
+        }
+        
+        function quitGame() {
+            game.started = false;
+            game.paused = false;
+            
+            pauseScreen.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            
+            // Clear any existing game objects
+            gameBg.innerHTML = '';
+            bullets = [];
+            enemyBullets = [];
+            enemies = [];
+            document.querySelectorAll('.game-object').forEach(el => el.remove());
+        }
+        
+        function update() {
+            if (!game.over && !game.paused) {
+                movePlayer();
+                if (player.autoshoot) shoot();
+                spawnEnemy();
+                updateBullets();
+                updateEnemies();
+                updateScore();
+                checkLevelUp();
+                
+                gameLoop = requestAnimationFrame(update);
+            }
+        }
+
+        // Get enemy design based on current level
+        function getEnemyDesign() {
+            let typeIndex = 0;
+            if (game.level >= 5 && game.level < 10) {
+                typeIndex = 1;
+            } else if (game.level >= 10 && game.level < 15) {
+                typeIndex = 2;
+            } else if (game.level >= 15 && game.level < 20) {
+                typeIndex = 3;
+            } else if (game.level >= 20) {
+                typeIndex = 4;
+            }
+            return game.enemyTypes[typeIndex];
+        }
+
+        // Render enemy SVG consistently
+        function renderEnemySVG(container, level) {
+            // Clear container
+            container.innerHTML = '';
+            
+            // Get enemy design based on level
+            const enemyType = getEnemyDesign();
+            
+            // Create unique IDs for SVG elements
+            const uniqueId = `enemy-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            let svgString = enemyType.svg
+                .replace(/id="enemyGrad\d+"/g, `id="${uniqueId}-grad"`)
+                .replace(/url\(#enemyGrad\d+\)/g, `url(#${uniqueId}-grad)`)
+                .replace(/id="weaponGrad\d*"/g, `id="${uniqueId}-weaponGrad"`)
+                .replace(/url\(#weaponGrad\d*\)/g, `url(#${uniqueId}-weaponGrad)`)
+                .replace(/id="enemyGlow\w*"/g, `id="${uniqueId}-glow"`)
+                .replace(/url\(#enemyGlow\w*\)/g, `url(#${uniqueId}-glow)`);
+            
+            container.innerHTML = svgString;
+            
+            // Ensure SVG takes full container space
+            const svg = container.querySelector('svg');
+            if (svg) {
+                svg.style.width = '100%';
+                svg.style.height = '100%';
+                svg.style.display = 'block';
+            }
+            
+            return container;
+        }
+        
+        
+    </script>
+</body>
+</html>
